@@ -122,6 +122,7 @@
                     AStar.pullSolve(res);
                     changeColor(AStar)
                     clearTimeout(timerId)
+                    return;
                 }
                 
                 let neighbors = AStar.getNeighbors(current);
