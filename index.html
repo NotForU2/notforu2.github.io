@@ -104,35 +104,57 @@
         function starStepByStep(from, to) {
             console.log('A-STAR-STEP-BY-STEP')
             AStar.initAlgorithm(edges);
-            AStar.Q.push(from);
-            AStar.setQueue(from)
+
+            AStar.openSet.push(from);
+            AStar.gScore[from] = 0;
+
+            AStar.fScore[from] = AStar.h(from, to);
             let index;
             let timerId = setTimeout(function tick() {
-                console.log(AStar.solveNodes)
-                console.log(AStar.deadNodes)
-                if(AStar.isEmpty(AStar.U)) {
-                    AStar.solveNodes = AStar.U[index];
-                    AStar.fixAll();
-                    AStar.findSolveEdges();
+                let current = AStar.minH(AStar.openSet, to)
+
+                AStar.deadNodes.push(current);
+
+                if(current === to) {
+                    let res = AStar.reconstructPath(AStar.cameFrom, current);
+                    AStar.pullSolve(res);
                     changeColor(AStar)
                     clearTimeout(timerId)
                 }
-                index = AStar.findMinF()
-                let tmp = AStar.U[index][AStar.U[index].length-1];
+                
+                let neighbors = AStar.getNeighbors(current);
+                
+                for(let val of neighbors) {
+                    let tentativeGScore = Number.parseInt(AStar.gScore[current]) + Number.parseInt(val.weight)
+                    let x = val.target.id
+                    if(!AStar.openSet.includes(x) && !AStar.closeSet.includes(x)){
+                        AStar.deadEdges.push(val);
 
+                        AStar.cameFrom[x] = current
+                        AStar.gScore[x] = Number.parseInt(tentativeGScore);
+                        AStar.fScore[x] = Number.parseInt(AStar.gScore[x])+AStar.h(x, to)
+                        AStar.openSet.push(x)
+                    }
+                    else {
+                        if(tentativeGScore < Number.parseInt(AStar.gScore[x])){
+                                AStar.deadEdges.push(val);
+
+                                AStar.cameFrom[x] = current
+                                AStar.gScore[x] = Number.parseInt(tentativeGScore);
+                                AStar.fScore[x] = Number.parseInt(AStar.gScore[x])+AStar.h(x, to)
+                                if(AStar.closeSet.includes(x)){
+                                    AStar.closeSet.splice(AStar.closeSet.indexOf(x, 0), 1);
+                                    AStar.openSet.push(x);
+                                }       
+                        }
+                
+                    }
+                }
+                
+                AStar.openSet.splice(AStar.openSet.indexOf(current), 1);
+                AStar.closeSet.push(current)
                 changeColor(AStar)
                 timerId = setTimeout(tick, 1500);
-                if(tmp === to) {
-                    AStar.solveNodes = AStar.U[index];
-                    AStar.fixAll();
-                    AStar.findSolveEdges();
-                    changeColor(AStar)
-                    clearTimeout(timerId)
-                }
-                if(!AStar.Q.includes(tmp)){
-                    AStar.Q.push(tmp);
-                    AStar.setQueue(tmp);
-                }
             }, 1500)
         }
 

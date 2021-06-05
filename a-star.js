@@ -7,135 +7,133 @@ var AStar = {
     deadNodes: [],
     deadEdges: [],
 
-    Q: [],
-    U: [],
+    gScore: {},
+    fScore: {},
+
+    cameFrom: {},
+    openSet: [],
+    closeSet: [],
 
     initAlgorithm: function (edges) {
         this.edgesAlg = edges;
+        this.gScore = {};
+        this.fScore = {};
+        this.cameFrom = {};
+        this.openSet = [];
+
         this.solveEdges = [];
         this.solveNodes = [];
         this.deadNodes = [];
         this.deadEdges = [];
-        this.Q = [];
-        this.U = [];
     },
 
-    heuristic: function (from, to) {
-        return to.charCodeAt(0) - from.charCodeAt(0);
+    h: function (ch, f) {
+        return Math.abs(ch.charCodeAt(0) - f.charCodeAt(0))
     },
 
-    func: function (arr) {
-        let x = 0;
-        for(let i = 0; i < arr.length-1; i++){
-            x += +this.findEdge(this.deadEdges, {source: arr[i], target: arr[i+1]}) + this.heuristic(arr[i], arr[i+1])
-        }
-        return x;
+    minH: function (openSet, to) {
+       let min = openSet[0];
+       for(let i = 1; i < openSet.length; i++){
+            if(Number.parseInt(this.fScore[openSet[i]]) < Number.parseInt(this.fScore[min])){
+                min = openSet[i]
+            }
+            else if(Number.parseInt(this.fScore[openSet[i]]) === Number.parseInt(this.fScore[min])){
+                if(this.h(openSet[i], to) < this.h(min, to)) {
+                    min = openSet[i]
+                }
+            }
+       }
+       return min
     },
 
-    findMinF: function () {
-        let index = 0;
-        let fu = Number.MAX_SAFE_INTEGER;
-        for(let i in this.U) {
-            let newFu = this.func(this.U[i]);
-            if (newFu < fu){
-                fu = newFu;
-                index = i;
+    getNeighbors: function (from) {
+        let res = [];
+        for(let i = 0; i < this.edgesAlg.length; i++){
+            if(this.edgesAlg[i].source.id === from) {
+                res.push(this.edgesAlg[i]);
             }
         }
-        return index;
+        return res;
     },
 
-    isEmpty: function (obj) {
-        for (let key in obj) {
-            return false;
+    reconstructPath: function (cameFrom, current) {
+        let res = []
+        let tmp = current;
+        while(tmp) {
+            res.push(tmp)
+            tmp = cameFrom[tmp];
         }
-        return true;
+        return res.reverse();
     },
 
-    setQueue: function(from) {
-        return this.edgesAlg.forEach((item) => {
-            if(item.source.id === from && !this.Q.includes(item.target.id)) {
-                this.deadNodes.push(item.target.id);
-                this.deadEdges.push(item);
-                if(from === 'a') {
-                    this.U.push([from, item.target.id]);
-                }
-                else {
-                    for(let i = 0; i < this.U.length; i++) {
-                        if(this.U[i][this.U[i].length-1] === item.source.id) {
-                            let arr = this.U[i].concat([item.target.id])
-                            this.U.splice(i, 1);
-                            this.U.push(arr);
-                        }
+    pullSolve: function (result) {
+        for(let i = 0; i < result.length; i++){
+            this.solveNodes.push(result[i]);
+            if(this.deadNodes.includes(result[i])){
+                this.deadNodes.splice(this.deadNodes.indexOf(result[i]), 1);
+            }
+
+            if(i !== result.length - 1) {
+                let count;
+                for(j = 0; j < this.deadEdges.length; j++) {
+                    if(this.deadEdges[j].source.id === result[i] && this.deadEdges[j].target.id === result[i+1]){
+                        count = j;
+                        this.solveEdges.push(this.deadEdges[j]);
+                        break;
                     }
                 }
-            }
-        })
-    },
-
-    findSolveEdges: function () {
-        for(let i=0; i<this.solveNodes.length-1; i++){
-            this.solveEdges.push({source:{id:this.solveNodes[i]},target:{id:this.solveNodes[i+1]}});
-        }
-    },
-
-    findEdge: function (arr, edge) {
-        return arr.find(function (item) {
-            return (edge.source === item.source.id) && (edge.target === item.target.id);
-        })
-    },
-
-    fixAll: function () {
-        let arr = []
-        for(let i = 0; i < this.deadNodes.length; i++){
-            if(!this.solveNodes.includes(this.deadNodes[i])){
-                arr.push(this.deadNodes[i]);
+                this.deadEdges.splice(count, 1);
             }
         }
-        this.deadNodes = arr;
-
-        let arr1 = []
-        for(let i = 0; i < this.deadEdges.length; i++) {
-            if(!this.solveNodes.includes(this.deadEdges[i].source.id) || !this.solveNodes.includes(this.deadEdges[i].target.id)){
-                arr1.push(this.deadEdges[i]);
-            }
-        }
-        this.deadEdges = arr1
-    },
-
-    wayStep: function (from, to) {
-        let index = Object.keys(this.U)[0]
-        let tmp = this.U[index][this.U[index].length-1];
-        if(tmp === to) {
-            return index;
-        }
-        if(this.Q.includes(tmp)){
-            return null;
-        }
-        this.Q.push(tmp);
-        this.setQueue(tmp);
     },
 
     waySolution: function (from, to) {
-       this.Q.push(from);
-       this.setQueue(from)
-       let index;
-       while (!this.isEmpty(this.U)) {
-           index = this.findMinF()
-           let tmp = this.U[index][this.U[index].length-1];
+        this.openSet.push(from);
+        this.gScore[from] = 0;
 
-           if(tmp === to) {
-               break;
-           }
-           if(this.Q.includes(tmp)){
-               continue;
-           }
-           this.Q.push(tmp);
-           this.setQueue(tmp);
-       }
-       this.solveNodes = this.U[index];
-       this.fixAll();
-       this.findSolveEdges();
+        this.fScore[from] = this.h(from, to);
 
+        while(this.openSet.length !== 0){
+            let current = this.minH(this.openSet, to)
+
+            this.deadNodes.push(current);
+
+            if(current === to) {
+                let res = this.reconstructPath(this.cameFrom, current);
+                this.pullSolve(res);
+            }
+            
+            let neighbors = this.getNeighbors(current);
+            
+            for(let val of neighbors) {
+                let tentativeGScore = Number.parseInt(this.gScore[current]) + Number.parseInt(val.weight)
+                let x = val.target.id
+                if(!this.openSet.includes(x) && !this.closeSet.includes(x)){
+                    this.deadEdges.push(val);
+
+                    this.cameFrom[x] = current
+                    this.gScore[x] = Number.parseInt(tentativeGScore);
+                    this.fScore[x] = Number.parseInt(this.gScore[x])+this.h(x, to)
+                    this.openSet.push(x)
+                }
+                else {
+                    if(tentativeGScore < Number.parseInt(this.gScore[x])){
+                            this.deadEdges.push(val);
+
+                            this.cameFrom[x] = current
+                            this.gScore[x] = Number.parseInt(tentativeGScore);
+                            this.fScore[x] = Number.parseInt(this.gScore[x])+this.h(x, to)
+                            if(this.closeSet.includes(x)){
+                               this.closeSet.splice(this.closeSet.indexOf(x, 0), 1);
+                               this.openSet.push(x);
+                            }       
+                    }
+               
+                }
+            }
+            this.openSet.splice(this.openSet.indexOf(current), 1);
+            this.closeSet.push(current)
+        }
+        return false;
     }
 }
