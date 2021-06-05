@@ -157,7 +157,10 @@
                 AStar.closeSet.push(current)
                 changeColor(AStar)
                 timerId = setTimeout(tick, 1500);
-                if(AStar.openSet.length === 0) clearTimeout(timerId)
+                if(AStar.openSet.length === 0) {
+                    clearTimeout(timerId)
+                    changeColor(AStar)
+                }
             }, 1500)
         }
 
