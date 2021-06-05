@@ -67,14 +67,14 @@
 
         function bruteWay(from, to) {
             console.log('BRUTE')
-            bruteForce.initAlgorithm(edges);
+            bruteForce.initAlgorithm([...edges]);
             bruteForce.waySolution(from, to);
             changeColor(bruteForce);
         }
 
         function bruteStepByStep(from, to) {
             console.log('BRUTE-STEP-BY-STEP')
-            bruteForce.initAlgorithm(edges);
+            bruteForce.initAlgorithm([...edges]);
             let tmpFrom = from;
             let doneAlg = false;
             let dead = false;
@@ -97,7 +97,7 @@
 
         function starWay(from, to) {
             console.log('A-STAR')
-            AStar.initAlgorithm(edges);
+            AStar.initAlgorithm([...edges]);
             AStar.waySolution(from, to);
             changeColor(AStar);
         }
@@ -110,7 +110,7 @@
             AStar.gScore[from] = 0;
 
             AStar.fScore[from] = AStar.h(from, to);
-            let index;
+
             let timerId = setTimeout(function tick() {
                 let current = AStar.minH(AStar.openSet, to)
 
